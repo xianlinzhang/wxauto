@@ -5915,7 +5915,60 @@ class Control():
             return children[index]
         else:
             return None
-        
+
+    def GetChildControlByCondition(self, condition) -> 'Control':
+        """
+        根据条件获取子控件。
+        condition: dict, 包含要匹配的属性和值，例如 {'Name': 'example', 'ClassName': 'Button'}
+                   支持的键: Name, ClassName, ControlTypeName, AutomationId, FrameworkId, LocalizedControlType
+        Return Control subclass 或 None。
+        """
+        # 先检查condition中是否包含有效键
+        valid_keys = {'Name', 'ClassName', 'ControlTypeName', 'AutomationId', 'FrameworkId', 'LocalizedControlType'}
+        condition_keys = set(condition.keys())
+
+        # 如果没有有效的键，直接返回None
+        if not (condition_keys & valid_keys):
+            return None
+
+        # 只检查condition中包含的属性
+        children = self.GetChildren()
+
+        for child in children:
+            match = True
+            # 只检查condition中指定的属性
+            for key, value in condition.items():
+                if key == 'Name':
+                    if child.Name != value:
+                        match = False
+                        break
+                elif key == 'ClassName':
+                    if child.ClassName != value:
+                        match = False
+                        break
+                elif key == 'ControlTypeName':
+                    if child.ControlTypeName != value:
+                        match = False
+                        break
+                elif key == 'AutomationId':
+                    if child.AutomationId != value:
+                        match = False
+                        break
+                elif key == 'FrameworkId':
+                    if child.FrameworkId != value:
+                        match = False
+                        break
+                elif key == 'LocalizedControlType':
+                    if child.LocalizedControlType != value:
+                        match = False
+                        break
+                # 忽略不支持的键
+
+            if match:
+                return child
+
+        return None
+
     def GetAllProgeny(self) -> List[List['Control']]:
         """
         Get all progeny controls.

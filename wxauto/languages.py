@@ -6,7 +6,8 @@ MAIN_LANGUAGE = {
 # 导航栏    
 '导航': {'cn': '导航', 'cn_t': '導航', 'en': 'Navigation'}, 
 '聊天': {'cn': '聊天', 'cn_t': '聊天', 'en': 'Chats'}, 
-'通讯录': {'cn': '通讯录', 'cn_t': '通訊錄', 'en': 'Contacts'}, 
+'微信': {'cn': '微信', 'cn_t': '微信', 'en': 'Chats'},
+'通讯录': {'cn': '通讯录', 'cn_t': '通訊錄', 'en': 'Contacts'},
 '收藏': {'cn': '收藏', 'cn_t': '收藏', 'en': 'Favorites'}, 
 '聊天文件': {'cn': '聊天文件', 'cn_t': '聊天室檔案', 'en': 'Chat Files'}, 
 '朋友圈': {'cn': '朋友圈', 'cn_t': '朋友圈', 'en': 'Moments'}, 

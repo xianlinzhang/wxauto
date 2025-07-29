@@ -311,6 +311,9 @@ def RollIntoView(win, ele, equal=False):
             else:
                 if ele.BoundingRectangle.bottom < win.BoundingRectangle.bottom:
                     break
+def wxlog_debug_control(prefix_text, control):
+    # 统一调试control信息
+    wxlog.debug(f"{prefix_text}: Name='{control.Name}', ClassName='{control.ClassName}', ControlTypeName='{control.ControlTypeName}',NativeWindowHandle='{control.NativeWindowHandle}', AutomationId='{control.AutomationId}', FrameworkId='{control.FrameworkId}', HelpText='{control.HelpText}', LocalizedControlType='{control.LocalizedControlType}'")
 
 wxlog = logging.getLogger('wxauto')
 wxlog.setLevel(logging.DEBUG)
