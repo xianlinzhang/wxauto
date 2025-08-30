@@ -48,28 +48,15 @@ class WeChat(WeChatBase):
         set_debug(debug)
         self.language = language
         # self._checkversion()
-        self._show()
+        # self._show()
 
-        UiaFirstControl = self.UiaAPI.GetFirstChildControl()
+        # wxlog_debug_control_children('主窗口下', self.UiaAPI)
+
+        UiaFirstControl = self.UiaAPI.GetChildControlByCondition({'LocalizedControlType': '组', 'ClassName': 'QWidget'})
 
         wxlog_debug_control("UiaFirstControl", UiaFirstControl)
 
-        # # 获取所有子元素
-        # children = UiaFirstControl.GetChildren()
-        # wxlog.debug(f"主窗口下第一个group的子元素数量: {len(children)}")
-        #
-        # # 详细显示每个子元素信息
-        # for i, child in enumerate(children):
-        #     wxlog_debug_control(f"子元素 {i}", child)
-        #
-        # MainControl1 = None
-        # for i in children:
-        #     if not i.ClassName or i.ClassName == 'QWidget':
-        #         MainControl1 = i
-        #         break
-        #
-        # if MainControl1 is None:
-        #     raise Exception("未找到主控件")
+        # wxlog_debug_control_children('主窗口下第一个group', UiaFirstControl)
 
         # 右上角的工具栏
         RightTopToolsBox = UiaFirstControl.GetChildControlByCondition({'LocalizedControlType': '工具栏', 'ClassName': 'mmui::TitleBar'})
@@ -109,32 +96,31 @@ class WeChat(WeChatBase):
         # self.A_Settings = self.NavigationBox.ButtonControl(Name=self._lang('设置及其他'))
         self.A_Settings = self.NavigationBox.ButtonControl(AutomationId="main_tabbar.tabbar_setting")
 
-        # 初始化聊天列表，以B开头
+        # B和C列的父亲元素
         MainControl2LastChildControl = MainControl2.GetLastChildControl()
 
         try:
-            # 尝试查找SessionBox元素
-            self.SessionBox = MainControl2LastChildControl.Control(ClassName="mmui::ChatMasterView", searchDepth= 2)
-            wxlog_debug_control("SessionBox", self.SessionBox)
+            # 尝试查找聊天tab下元素
+            ChatBoxSignControl = MainControl2LastChildControl.Control(ClassName="mmui::ChatMasterView", searchDepth=2)
+            wxlog.debug(f"找到聊天tab下元素，无需SwitchToChat")
+            wxlog_debug_control("ChatBoxSignControl", ChatBoxSignControl)
         except Exception as e:
             # 捕获异常后执行SwitchToChat
-            wxlog.debug(f"查找SessionBox时发生异常: {e}")
+            wxlog.debug(f"未找聊天tab下元素，说明当前不在聊天界面，执行SwitchToChat")
             self.SwitchToChat()
-            # 重新尝试查找元素
-            try:
-                self.SessionBox = MainControl2LastChildControl.Control(ClassName="mmui::ChatMasterView", searchDepth= 2)
-                wxlog_debug_control("SessionBox", self.SessionBox)
-            except Exception as e2:
-                wxlog.error(f"重新查找SessionBox失败: {e2}")
-                raise
 
+        # 初始化聊天栏，以C开头
+        self.ChatBox = MainControl2LastChildControl.GetFirstChildControl()
+        wxlog_debug_control("ChatBox", self.ChatBox)
+        self.C_MsgList = self.ChatBox.ListControl(Name=self._lang('消息'))
+
+        # 初始化聊天列表，以B开头
+        self.SessionBox = self.ChatBox.GetNextSiblingControl()
+        wxlog_debug_control("SessionBox", self.SessionBox)
         self.B_Search = self.SessionBox.EditControl(Name=self._lang('搜索'))
         wxlog_debug_control("B_Search", self.B_Search)
 
-        # 初始化聊天栏，以C开头
-        self.ChatBox = MainControl2LastChildControl.Control(ClassName="mmui::ChatDetailView")
-        wxlog_debug_control("ChatBox", self.ChatBox)
-        self.C_MsgList = self.ChatBox.ListControl(Name=self._lang('消息'))
+       
         
         self.nickname = self.A_MyIcon.Name
         msgs_ = self.GetAllMessage()
@@ -400,40 +386,41 @@ class WeChat(WeChatBase):
         '''
         self._show()
 
-        sessiondict = self.GetSessionList(True)
-        # 在session 列表上，直接点击去发送
-        if who in list(sessiondict.keys())[:-1]:
-            wxlog.debug(f"{who}在session列表中,直接点击去发送")
-            # 获取目标控件
-            target_control = self.SessionBox.ListItemControl(RegexName=who)
-            # 检查是否可见并在必要时滚动到可视区域
-            RollIntoView(self.SessionBox, target_control)
-            # 点击控件
+        # sessiondict = self.GetSessionList(True)
+        # # 在session 列表上，直接点击去发送
+        # if who in list(sessiondict.keys())[:-1]:
+        #     wxlog.debug(f"{who}在session列表中,直接点击去发送")
+        #     # 获取目标控件
+        #     target_control = self.SessionBox.ListItemControl(RegexName=who)
+        #     # 检查是否可见并在必要时滚动到可视区域
+        #     RollIntoView(self.SessionBox, target_control)
+        #     # 点击控件
+        #     target_control.Click(simulateMove=False)
+        #     return who
+        # else:
+
+        self.UiaAPI.SendKeys('{Ctrl}f', waitTime=1)
+        wxlog.debug(f"输入：{who} 去搜索前")
+        self.B_Search.SendKeys(who, waitTime=1.5)
+        wxlog.debug(f"输入：{who} 去搜索后")
+        target_control = self.SessionBox.TextControl(Name=f"<em>{who}</em>")
+        if target_control.Exists(timeout):
+            wxlog.debug('选择完全匹配项')
             target_control.Click(simulateMove=False)
             return who
         else:
-            self.UiaAPI.SendKeys('{Ctrl}f', waitTime=1)
-            wxlog.debug(f"输入：{who} 去搜索前")
-            self.B_Search.SendKeys(who, waitTime=1.5)
-            wxlog.debug(f"输入：{who} 去搜索后")
-            target_control = self.SessionBox.TextControl(Name=f"<em>{who}</em>")
-            if target_control.Exists(timeout):
-                wxlog.debug('选择完全匹配项')
-                target_control.Click(simulateMove=False)
-                return who
-            else:
 
-                search_result_control = self.UiaAPI.Control(ClassName='mmui::SearchContentPopover', searchDepth=5)
-                wxlog_debug_control('search_result_control', search_result_control)
-                if not search_result_control.ListControl(AutomationId = "search_list").ListItemControl(RegexName='联系人|群聊|功能').Exists(0.1):
-                    wxlog.debug(f'未找到搜索结果: {who}')
-                    self._refresh()
-                    return False
-                wxlog.debug('选择搜索结果第一个')
-                target_control = search_result_control.ListItemControl(RegexName=f'.*{who}.*')
-                chatname = target_control.Name
-                target_control.Click(simulateMove=False)
-                return chatname
+            search_result_control = self.UiaAPI.Control(ClassName='mmui::SearchContentPopover', searchDepth=5)
+            wxlog_debug_control('search_result_control', search_result_control)
+            if not search_result_control.ListControl(AutomationId = "search_list").ListItemControl(RegexName='联系人|群聊|功能').Exists(0.1):
+                wxlog.debug(f'未找到搜索结果: {who}')
+                self._refresh()
+                return False
+            wxlog.debug('选择搜索结果第一个')
+            target_control = search_result_control.ListItemControl(RegexName=f'.*{who}.*')
+            chatname = target_control.Name
+            target_control.Click(simulateMove=False)
+            return chatname
     
     def AtAll(self, msg=None, who=None):
         """@所有人
@@ -811,13 +798,29 @@ class WeChat(WeChatBase):
         """
         self._show()
         self.SwitchToContact()
-        self.SessionBox.ButtonControl(Name='添加朋友').Click(simulateMove=False)
-        edit = self.SessionBox.EditControl(Name='微信号/手机号')
-        edit.Click(simulateMove=False)
-        edit.SendKeys(keywords)
-        self.SessionBox.TextControl(Name=f'搜索：{keywords}').Click(simulateMove=False)
 
-        ContactProfileWnd = uia.PaneControl(ClassName='ContactProfileWnd')
+        # self.SessionBox.ButtonControl(Name='添加朋友').Click(simulateMove=False)
+        # edit = self.SessionBox.EditControl(Name='微信号/手机号')
+        # edit.Click(simulateMove=False)
+        # edit.SendKeys(keywords)
+
+        self.UiaAPI.SendKeys('{Ctrl}f', waitTime=1)
+        wxlog.debug(f"输入：{keywords} 去搜索前")
+        self.B_Search.SendKeys(keywords, waitTime=1.5)
+        wxlog.debug(f"输入：{keywords} 去搜索后")
+
+        search_result_control = self.UiaAPI.Control(ClassName='mmui::SearchContentPopover', searchDepth=5)
+        wxlog_debug_control('search_result_control', search_result_control)
+        if not search_result_control.ListControl(AutomationId="search_list").ListItemControl(
+                RegexName='网络查找手机').Exists(0.1):
+            wxlog.debug(f'未找到搜索结果: {keywords}')
+            self._refresh()
+            return False
+        wxlog.debug('选择搜索结果第一个')
+        target_control = search_result_control.ListItemControl(RegexName=f'.*网络查找手机/QQ号.*')
+        target_control.Click(simulateMove=False)
+
+        ContactProfileWnd = uia.GroupControl(ClassName='mmui::ContactProfileView')
         if ContactProfileWnd.Exists(maxSearchSeconds=2):
             # 点击添加到通讯录
             ContactProfileWnd.ButtonControl(Name='添加到通讯录').Click(simulateMove=False)
@@ -826,6 +829,7 @@ class WeChat(WeChatBase):
             return False
 
         NewFriendsWnd = self.UiaAPI.WindowControl(ClassName='WeUIDialog')
+
         if NewFriendsWnd.Exists(maxSearchSeconds=2):
             if addmsg:
                 msgedit = NewFriendsWnd.TextControl(Name="发送添加朋友申请").GetParentControl().EditControl()
@@ -846,9 +850,18 @@ class WeChat(WeChatBase):
                     tagedit.SendKeys(tag)
                     NewFriendsWnd.PaneControl(ClassName='DropdownWindow').TextControl().Click(simulateMove=False)
 
-            NewFriendsWnd.ButtonControl(Name='确定').Click(simulateMove=False)
+            # NewFriendsWnd.ButtonControl(Name='确定').Click(simulateMove=False)
         return True
-    
+
+
+    def ClickMinimizeIcon(self):
+
+        if win32gui.IsWindowVisible(self._get_uia_api_hwnd()):
+            wxlog.debug("微信窗口可见，点击最小化图标")
+            self.T_MinimizeIcon.Click(simulateMove=False)
+        else:
+            wxlog.debug("微信窗口不可见，无需点击最小化图标")
+
 class WeChatFiles:
     def __init__(self, language='cn') -> None:
         self.language = language

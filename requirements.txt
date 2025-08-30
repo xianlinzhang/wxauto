@@ -3,3 +3,11 @@ Pillow
 pywin32
 psutil
 pyperclip
+
+
+requests
+
+redis==3.5.3
+python-dotenv
+
+colorama

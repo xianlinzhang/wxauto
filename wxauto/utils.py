@@ -315,6 +315,15 @@ def wxlog_debug_control(prefix_text, control):
     # 统一调试control信息
     wxlog.debug(f"{prefix_text}: Name='{control.Name}', ClassName='{control.ClassName}', ControlTypeName='{control.ControlTypeName}',NativeWindowHandle='{control.NativeWindowHandle}', AutomationId='{control.AutomationId}', FrameworkId='{control.FrameworkId}', HelpText='{control.HelpText}', LocalizedControlType='{control.LocalizedControlType}'")
 
+def wxlog_debug_control_children(control_name, control):
+    children = control.GetChildren()
+    wxlog.debug(f"{control_name}的子元素数量: {len(children)}")
+
+    # 详细显示每个子元素信息
+    for i, child in enumerate(children):
+        wxlog_debug_control(f"{control_name}的子元素 {i}", child)
+
+
 wxlog = logging.getLogger('wxauto')
 wxlog.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
