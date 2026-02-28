@@ -21,9 +21,18 @@ except:
 
 class WeChat(WeChatBase):
     VERSION: str = '3.9.11.17'
+
+    # 微信窗口类
     WindowControlClassName: str = 'mmui::MainWindow'
     # WindowControlClassName: str = 'WeWorkWindow'
     # WindowControlClassName: str = 'WeChatMainWndForPC'
+
+    # 朋友圈窗口类
+    WindowMomentsControlClassName: str = 'mmui::SNSWindow'
+    # 朋友圈窗口工具条类
+    WindowMomentsControlToolBarClassName: str = 'mmui::SNSWindowToolBar'
+    # 打开发表窗口的按钮类
+    WindowMomentsControlReleaseToolClassName: str = 'mmui::XTabBarItem'
 
     lastmsgid: str = None
     listen: dict = dict()
@@ -700,6 +709,132 @@ class WeChat(WeChatBase):
         self._show()
         self.A_ChatIcon.Click(simulateMove=False)
 
+    def OpenMoments(self):
+        """打开朋友圈界面"""
+        wxlog.debug(f"打开朋友圈界面")
+        self._show()
+        self.A_MomentsIcon.Click(simulateMove=False)
+
+    def GetMomentsWindow(self):
+        """获取朋友圈窗口控件
+
+        Returns:
+            uia.WindowControl: 朋友圈窗口控件，如果不存在则返回None
+        """
+        moments_window = uia.WindowControl(ClassName=self.WindowMomentsControlClassName, searchDepth=1)
+        if moments_window.Exists(maxSearchSeconds=0.1):
+            return moments_window
+        else:
+            return None
+
+    def ShowMoments(self):
+        """显示朋友圈窗口到前台
+
+        Returns:
+            uia.WindowControl: 朋友圈窗口控件
+        """
+
+
+        is_find = False
+
+
+        for i in range(5):
+            # 获取朋友圈窗口
+            moments_window = self.GetMomentsWindow()
+            if not moments_window:
+                # 先打开朋友圈界面
+                self.OpenMoments()
+                time.sleep(0.5)
+            else:
+                wxlog.debug(f"第{i}次循环找到朋友圈窗口")
+                wxlog_debug_control("MomentsWindow", moments_window)
+                is_find = True
+                break
+
+        if is_find:
+            # 获取朋友圈窗口句柄
+            moments_hwnd = moments_window.NativeWindowHandle
+            wxlog.debug(f"朋友圈窗口句柄: {moments_hwnd}")
+
+            if not moments_hwnd:
+                wxlog.error("无法获取朋友圈窗口句柄")
+                return moments_window
+
+            # 检查窗口是否已经可见
+            if win32gui.IsWindowVisible(moments_hwnd):
+                wxlog.debug("朋友圈窗口已经可见，无需重复显示")
+                moments_window.SwitchToThisWindow()
+                return moments_window
+
+            wxlog.debug("朋友圈窗口不可见，正在显示窗口")
+            win32gui.ShowWindow(moments_hwnd, 1)
+            win32gui.SetWindowPos(moments_hwnd, -1, 0, 0, 0, 0, 3)
+            win32gui.SetWindowPos(moments_hwnd, -2, 0, 0, 0, 0, 3)
+            moments_window.SwitchToThisWindow()
+            return moments_window
+        else:
+            wxlog.error("朋友圈窗口显示失败")
+            return None
+
+
+    def MomentsReleaseMessage(self, message):
+        # 打开发表信息窗口函数
+
+
+        moments_window = self.ShowMoments()
+        wxlog_debug_control("OpenMomentsReleaseWin", moments_window)
+
+        moments_window_child_group = moments_window.GetChildControlByCondition({'LocalizedControlType': '组', 'ClassName': 'QWidget'})
+        moments_window_child_group_child_group = moments_window_child_group.GetChildControlByCondition({'LocalizedControlType': '组', 'ClassName': 'QWidget'})
+
+        #朋友圈窗口工具条
+        MomentsToolBar = moments_window_child_group_child_group.GetChildControlByCondition({'ClassName': self.WindowMomentsControlToolBarClassName})
+        wxlog_debug_control("MomentsToolBar", MomentsToolBar)
+
+        #打开发表窗口的按钮
+        MomentsReleaseToolTool = MomentsToolBar.ButtonControl(ClassName=self.WindowMomentsControlReleaseToolClassName,Name=('发表'))
+        MomentsReleaseToolTool.Click(simulateMove=False)
+        time.sleep(0.5)
+
+        # 朋友圈发布弹框元素
+        MomentsDialogGroup = moments_window_child_group_child_group.GetChildControlByCondition({'LocalizedControlType': '组', 'ClassName': 'mmui::XView'})
+        wxlog_debug_control("MomentsDialogGroup", MomentsDialogGroup)
+
+        MomentsDialogGroupPublishPanel = MomentsDialogGroup.GetChildControlByCondition({'ClassName': 'mmui::SnsPublishPanel'})
+
+        MomentsDialogGroupPublishPanelChildGroup = MomentsDialogGroupPublishPanel.GetChildControlByCondition({'LocalizedControlType': '组', 'ClassName': 'mmui::XView'})
+
+        MomentsDialogGroupPublishQFScrollArea = MomentsDialogGroupPublishPanelChildGroup.GetChildControlByCondition({'ClassName': 'QFScrollArea'})
+
+        # 输入框
+        MomentsDialogReplyInput = MomentsDialogGroupPublishQFScrollArea.FindControlByCondition({'ClassName': 'mmui::ReplyInputField'})
+
+        SetClipboardText(message)
+
+        MomentsDialogReplyInput.SendKeys('{Ctrl}v')
+
+        wxlog_debug_control("MomentsDialogReplyInput", MomentsDialogReplyInput)
+        time.sleep(0.5)
+
+        MomentsDialogGroupPublishToolsGroup = MomentsDialogGroupPublishPanelChildGroup.GetChildControlByCondition({'LocalizedControlType': '组', 'ClassName': 'mmui::XView'})
+
+
+        # 取消按钮
+        MomentsDialogGroupPublishCancelButton = MomentsDialogGroupPublishToolsGroup.FindControlByCondition({'Name':'取消','LocalizedControlType': '按钮', 'ClassName': 'mmui::XOutlineButton'})
+
+        # 发表按钮
+        MomentsDialogGroupPublishReleaseButton = MomentsDialogGroupPublishToolsGroup.FindControlByCondition({'Name': '发表', 'LocalizedControlType': '按钮', 'ClassName': 'mmui::XOutlineButton'})
+        
+        # 点击发表按钮
+        # MomentsDialogGroupPublishReleaseButton.Click(simulateMove=False)
+
+
+
+
+
+
+
+
     # def DownloadFiles(self, who, amount=1):
     #     """切换到聊天文件页面
         
@@ -861,6 +996,16 @@ class WeChat(WeChatBase):
             self.T_MinimizeIcon.Click(simulateMove=False)
         else:
             wxlog.debug("微信窗口不可见，无需点击最小化图标")
+
+
+    def ignoreUpdate(self):
+
+       updateWin = uia.WindowControl(Name='微信',ClassName='mmui::UpdateWindow', searchDepth=1)
+       ignoreUpdateButton = updateWin.FindControlByCondition({'Name': '忽略本次更新', 'LocalizedControlType': '按钮', 'ClassName': 'mmui::XOutlineButton'})
+
+       wxlog_debug_control('ignoreUpdateButton', ignoreUpdateButton)
+
+       ignoreUpdateButton.Click(simulateMove=False)
 
 class WeChatFiles:
     def __init__(self, language='cn') -> None:

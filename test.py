@@ -22,7 +22,7 @@ class WeChatMonitor:
         """后台监控微信session的工作者函数"""
         url = "http://127.0.0.1:5030/api/v1/session"
 
-        IgnoreUsernames = "brandsessionholder,gh_edac0ec6a0ba,newsapp,gh_b6f1d17d2ffc"
+        IgnoreUsernames = "brandsessionholder,gh_edac0ec6a0ba,newsapp,gh_b6f1d17d2ffc,gh_315e955abdf5,brandservicesessionholder"
         # IgnoreUsernames = ""
         params = {
             "format": "json",
@@ -94,7 +94,7 @@ class WeChatMonitor:
                                          isinstance(msg, dict) and "seq" in msg}
 
                         needAutoReplyFreeRide = False
-                        autoReplyContent = '好的，收到，我们会及时在我们多个平台发布包括公众号【莲城宝】的哈'
+                        autoReplyContent = '好的，收到，我们会及时发布的哈'
                         # 合并新数据，只添加seq不重复的消息
                         for message in chatlog_data:
                             if isinstance(message, dict) and "seq" in message:
@@ -251,5 +251,19 @@ if __name__ == '__main__':
     wx = WeChat(debug = True)
 
     # 创建并启动监控器
-    monitor = WeChatMonitor(wx_instance=wx)
-    monitor.start_session_monitor()
+    # monitor = WeChatMonitor(wx_instance=wx)
+    # monitor.start_session_monitor()
+
+
+    # 发布朋友圈信息
+    message = """招聘：
+后厨工、
+操作工、
+煮面工。
+月薪3000+。
+岗位要求：35岁以下，手脚勤快，认字等，有经验者优先。
+联系方式：13122033112(陈店长)(微信同号，有意联系)
+工作地点：广昌县颐和花园刘文祥麻辣烫"""
+    wx.MomentsReleaseMessage(message)
+
+    # wx.ignoreUpdate()
