@@ -22,7 +22,7 @@ class WeChatMonitor:
         """后台监控微信session的工作者函数"""
         url = "http://127.0.0.1:5030/api/v1/session"
 
-        IgnoreUsernames = "brandsessionholder,gh_edac0ec6a0ba,newsapp"
+        IgnoreUsernames = "brandsessionholder,gh_edac0ec6a0ba,newsapp,gh_b6f1d17d2ffc"
         # IgnoreUsernames = ""
         params = {
             "format": "json",
